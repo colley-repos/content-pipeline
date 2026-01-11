@@ -1,6 +1,6 @@
-# AI Content Generator SaaS Platform
+# Synthia
 
-A production-ready AI-powered content generation platform built with Next.js, PostgreSQL, Stripe, and OpenAI. Generate viral social media posts, captions, scripts, bios, and content calendars with AI.
+AI-powered content workflow automation for creators and influencers. Built with Next.js, PostgreSQL, Stripe, and OpenAI. Generate viral social media posts, captions, scripts, bios, and content calendars with AI.
 
 ## 🚀 Features
 

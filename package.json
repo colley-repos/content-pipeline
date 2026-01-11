@@ -1,7 +1,7 @@
 {
-  "name": "ai-content-generator",
+  "name": "synthia",
   "version": "1.0.0",
-  "description": "AI-powered social media content generation SaaS platform",
+  "description": "Synthia - AI-powered content workflow automation for creators",
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",

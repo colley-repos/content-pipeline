@@ -23,7 +23,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ai_content_app
+    container_name: synthia_app
     restart: always
     ports:
       - "3000:3000"
