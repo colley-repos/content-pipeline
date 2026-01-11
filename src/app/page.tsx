@@ -8,7 +8,7 @@ export default function Home() {
       <header className="container mx-auto px-4 py-6">
         <nav className="flex justify-between items-center">
           <div className="text-2xl font-bold text-purple-600">
-            AI Content Generator
+            Synthia
           </div>
           <div className="space-x-4">
             <Link href="/login">
@@ -24,57 +24,60 @@ export default function Home() {
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-20 text-center">
         <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-          Create Viral Social Media Content<br />in Seconds with AI
+          Stop Wasting Hours<br />Creating Content
         </h1>
         <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          Generate engaging posts, captions, scripts, and content calendars that drive engagement and grow your audience.
+          You want to be the next big influencer, not spend all day editing. We give you your time back with high-quality content generated on-the-fly. Supply your scripts or go 100% hands-off.
         </p>
         <div className="space-x-4">
           <Link href="/register">
             <Button size="lg" className="text-lg px-8">
-              Start Creating Free
+              Get 3 Free Posts
             </Button>
           </Link>
           <Link href="/pricing">
             <Button size="lg" variant="outline" className="text-lg px-8">
-              View Pricing
+              See Pricing
             </Button>
           </Link>
         </div>
+        <p className="text-sm text-gray-500 mt-4">
+          30 minutes of content/month for $29. No credit card required to start.
+        </p>
       </section>
 
       {/* Features */}
       <section className="container mx-auto px-4 py-20">
         <h2 className="text-3xl font-bold text-center mb-12">
-          Everything You Need to Create Amazing Content
+          Everything You Need to Grow Your Audience
         </h2>
         <div className="grid md:grid-cols-3 gap-8">
           <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="text-4xl mb-4">✨</div>
-            <h3 className="text-xl font-semibold mb-2">Social Media Posts</h3>
+            <div className="text-4xl mb-4">⚡</div>
+            <h3 className="text-xl font-semibold mb-2">Lightning Fast</h3>
             <p className="text-gray-600">
-              Generate viral-worthy posts for Instagram, Twitter, LinkedIn, and more.
+              Generate a month&apos;s worth of posts in minutes, not hours. Get your time back.
             </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="text-4xl mb-4">📝</div>
-            <h3 className="text-xl font-semibold mb-2">Captions & Scripts</h3>
+            <div className="text-4xl mb-4">🎯</div>
+            <h3 className="text-xl font-semibold mb-2">Your Voice, Your Brand</h3>
             <p className="text-gray-600">
-              Create compelling captions and video scripts that capture attention.
+              Bring your own scripts or let AI create everything. Either way, it sounds like you.
             </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="text-4xl mb-4">📅</div>
-            <h3 className="text-xl font-semibold mb-2">Content Calendars</h3>
+            <div className="text-4xl mb-4">📱</div>
+            <h3 className="text-xl font-semibold mb-2">Made for Social</h3>
             <p className="text-gray-600">
-              Plan your content strategy with AI-generated calendars.
+              Instagram, TikTok, YouTube Shorts - optimized content for every platform.
             </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="text-4xl mb-4">💬</div>
-            <h3 className="text-xl font-semibold mb-2">Perfect Replies</h3>
+            <div className="text-4xl mb-4">💰</div>
+            <h3 className="text-xl font-semibold mb-2">Actually Affordable</h3>
             <p className="text-gray-600">
-              Craft engaging replies that build community and drive conversations.
+              $29/month for 30 minutes of content. That&apos;s less than a Netflix subscription.
             </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-lg">
