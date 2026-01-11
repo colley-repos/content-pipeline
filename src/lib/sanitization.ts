@@ -117,7 +117,7 @@ export function sanitizePrompt(prompt: string): {
   const errors: string[] = []
   
   // Basic sanitization
-  let sanitized = sanitizeText(prompt, INPUT_LIMITS.PROMPT)
+  const sanitized = sanitizeText(prompt, INPUT_LIMITS.PROMPT)
   
   // Check minimum length
   if (sanitized.length < 5) {

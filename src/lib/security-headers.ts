@@ -18,7 +18,7 @@ import type { NextRequest } from 'next/server'
  */
 export function applySecurityHeaders(
   response: NextResponse,
-  request: NextRequest
+  _request: NextRequest
 ): NextResponse {
   const isDevelopment = process.env.NODE_ENV === 'development'
   const isProduction = process.env.NODE_ENV === 'production'
