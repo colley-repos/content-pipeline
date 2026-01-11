@@ -126,7 +126,8 @@ model Content {
   shared              Boolean     @default(false)
   metadata            Json?
   estimatedSeconds    Int         @default(0) // Estimated content duration in seconds
-  tokensUsed          Int         @default(0) // OpenAI tokens consumed
+  computeSeconds      Int         @default(0) // GPU compute time in seconds
+  gpuProvider         String?     // GPU provider used (runpod, vastai, selfhosted, etc.)
   costUsd             Float       @default(0) // Actual cost in USD
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
@@ -137,6 +138,7 @@ model Content {
   @@index([shareToken])
   @@index([createdAt])
   @@index([costUsd]) // For cost analysis queries
+  @@index([gpuProvider]) // For provider cost analysis
 }
 
 model Analytics {

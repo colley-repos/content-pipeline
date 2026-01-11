@@ -14,7 +14,7 @@ import {
   hasContentMinutesRemaining,
   formatMinutesRemaining,
 } from '@/lib/content-limits'
-import { calculateGenerationCost } from '@/lib/cost-tracking'
+import { calculateGenerationCost, type GPUProvider } from '@/lib/cost-tracking'
 
 const generateSchema = z.object({
   type: z.enum(['social_post', 'caption', 'script', 'bio', 'reply', 'content_calendar']),
@@ -122,16 +122,24 @@ async function handler(request: Request) {
     const body = await request.json()
     const params = generateSchema.parse(body)
 
-    // Generate content using OpenAI (now returns content + token usage)
+    // Generate content using open source models (returns content + metadata)
     const result = await generateContent(params)
-    const { content: output, tokensUsed } = result
+    const { content: output } = result
 
-    // Calculate cost based on actual token usage
-    const costUsd = calculateGenerationCost(tokensUsed.input, tokensUsed.output)
-
-    // Estimate actual content duration based on generated output
+    // TODO: Replace this with actual video generation API call
+    // For now, estimate GPU compute time based on content duration
     const wordCount = countWords(output)
     const estimatedSeconds = estimateContentDuration(params.type, wordCount)
+    
+    // Estimate GPU compute time (rough approximation until real video gen is integrated)
+    // Assuming ~2-3x content duration for generation time (adjust based on real metrics)
+    const computeSeconds = Math.ceil(estimatedSeconds * 2.5)
+    
+    // Get GPU provider from env or default
+    const gpuProvider = (process.env.GPU_PROVIDER || 'default') as GPUProvider
+    
+    // Calculate cost based on GPU compute time
+    const costUsd = calculateGenerationCost(computeSeconds, gpuProvider)
 
     // Update subscription usage if subscribed
     if (hasActiveSubscription && user.subscription) {
@@ -156,18 +164,15 @@ async function handler(request: Request) {
         output,
         shareToken,
         estimatedSeconds,
-        tokensUsed: tokensUsed.total,
+        computeSeconds,
+        gpuProvider,
         costUsd,
         metadata: {
           context: params.context,
           tone: params.tone,
           length: params.length,
           wordCount,
-          tokenBreakdown: {
-            input: tokensUsed.input,
-            output: tokensUsed.output,
-            total: tokensUsed.total,
-          },
+          estimatedComputeTime: `${computeSeconds}s`,
         },
       },
     })

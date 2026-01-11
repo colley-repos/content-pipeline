@@ -26,11 +26,8 @@ export interface GenerateContentParams {
 
 export interface GenerateContentResult {
   content: string
-  tokensUsed: {
-    input: number
-    output: number
-    total: number
-  }
+  // Note: Using open source models, not tracking tokens
+  // GPU compute time will be tracked separately when video generation is integrated
 }
 
 const SYSTEM_PROMPTS = {
@@ -77,6 +74,8 @@ Length: ${lengthGuideline}
 Generate high-quality content that stands out and drives engagement.`
 
   try {
+    // TODO: Replace with open source model API
+    // For now, using OpenAI as placeholder (will be replaced with open source alternatives)
     const response = await client.chat.completions.create({
       model: process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4-turbo-preview',
       messages: [
@@ -93,13 +92,6 @@ Generate high-quality content that stands out and drives engagement.`
       throw new Error('No content generated')
     }
 
-    // Extract token usage
-    const tokensUsed = {
-      input: response.usage?.prompt_tokens || 0,
-      output: response.usage?.completion_tokens || 0,
-      total: response.usage?.total_tokens || 0,
-    }
-
     // Add viral CTA if configured
     const viralCTA = process.env.VIRAL_CTA
     const finalContent = viralCTA && type !== 'content_calendar' 
@@ -108,10 +100,10 @@ Generate high-quality content that stands out and drives engagement.`
 
     return {
       content: finalContent,
-      tokensUsed,
+      // Not tracking tokens since we'll use open source models
     }
   } catch (error) {
-    console.error('OpenAI API Error:', error)
+    console.error('Content generation error:', error)
     throw new Error('Failed to generate content')
   }
 }

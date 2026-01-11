@@ -1,24 +1,27 @@
 /**
  * Cost tracking and profitability analysis
- * Ensures we don't lose money on AI operations
+ * Ensures we don't lose money on video generation operations
  */
 
-// OpenAI pricing (as of Jan 2026 - update these if pricing changes)
-// Using GPT-4 pricing as baseline
-const OPENAI_PRICING = {
-  gpt4: {
-    input: 0.03 / 1000, // $0.03 per 1K input tokens
-    output: 0.06 / 1000, // $0.06 per 1K output tokens
-  },
-  gpt4_turbo: {
-    input: 0.01 / 1000, // $0.01 per 1K input tokens
-    output: 0.03 / 1000, // $0.03 per 1K output tokens
-  },
-  gpt35_turbo: {
-    input: 0.0005 / 1000, // $0.0005 per 1K input tokens
-    output: 0.0015 / 1000, // $0.0015 per 1K output tokens
-  },
+// GPU Cloud Provider Pricing (per hour)
+// Update these based on actual provider costs
+// These are example rates for RTX 4090 / RTX 3090 class GPUs
+export const GPU_PRICING = {
+  // Cloud providers
+  runpod_rtx4090: 0.69, // RunPod RTX 4090 ($/hour)
+  vastai_rtx4090: 0.50, // Vast.ai RTX 4090 spot ($/hour)  
+  lambda_rtx4090: 1.10, // Lambda Labs RTX 4090 ($/hour)
+  paperspace_rtx4000: 0.76, // Paperspace RTX 4000 ($/hour)
+  
+  // Self-hosted estimates (electricity + depreciation)
+  selfhosted_rtx3090: 0.15, // Self-hosted RTX 3090 ($/hour)
+  selfhosted_rtx4090: 0.20, // Self-hosted RTX 4090 ($/hour)
+  
+  // Default fallback (average cloud GPU cost)
+  default: 0.60, // $/hour
 } as const
+
+export type GPUProvider = keyof typeof GPU_PRICING
 
 // Plan revenue per month
 export const PLAN_REVENUE = {
@@ -34,17 +37,20 @@ export const PROFIT_TARGETS = {
 } as const
 
 /**
- * Calculate cost for a generation based on tokens used
+ * Calculate cost for a video generation based on GPU compute time
+ * @param computeSeconds - GPU compute time in seconds
+ * @param provider - GPU provider/instance type (default: 'default')
+ * @param customRate - Optional custom hourly rate (overrides provider default)
+ * @returns Cost in USD
  */
 export function calculateGenerationCost(
-  inputTokens: number,
-  outputTokens: number,
-  model: 'gpt4' | 'gpt4_turbo' | 'gpt35_turbo' = 'gpt4_turbo'
+  computeSeconds: number,
+  provider: GPUProvider = 'default',
+  customRate?: number
 ): number {
-  const pricing = OPENAI_PRICING[model]
-  const inputCost = inputTokens * pricing.input
-  const outputCost = outputTokens * pricing.output
-  return inputCost + outputCost
+  const hourlyRate = customRate ?? GPU_PRICING[provider] ?? GPU_PRICING.default
+  const hours = computeSeconds / 3600
+  return hours * hourlyRate
 }
 
 /**
