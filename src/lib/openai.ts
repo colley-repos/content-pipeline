@@ -24,6 +24,15 @@ export interface GenerateContentParams {
   length?: 'short' | 'medium' | 'long'
 }
 
+export interface GenerateContentResult {
+  content: string
+  tokensUsed: {
+    input: number
+    output: number
+    total: number
+  }
+}
+
 const SYSTEM_PROMPTS = {
   social_post: `You are an expert social media content creator. Generate engaging, viral-worthy social media posts that capture attention, drive engagement, and encourage shares. Include relevant emojis and hashtags naturally.`,
   
@@ -52,7 +61,7 @@ const LENGTH_GUIDELINES = {
   long: 'Offer comprehensive content (200+ words with multiple paragraphs).',
 }
 
-export async function generateContent(params: GenerateContentParams): Promise<string> {
+export async function generateContent(params: GenerateContentParams): Promise<GenerateContentResult> {
   const { type, prompt, context, tone = 'casual', length = 'medium' } = params
 
   const systemPrompt = SYSTEM_PROMPTS[type]
@@ -84,13 +93,23 @@ Generate high-quality content that stands out and drives engagement.`
       throw new Error('No content generated')
     }
 
-    // Add viral CTA if configured
-    const viralCTA = process.env.VIRAL_CTA
-    if (viralCTA && type !== 'content_calendar') {
-      return `${content}\n\n${viralCTA}`
+    // Extract token usage
+    const tokensUsed = {
+      input: response.usage?.prompt_tokens || 0,
+      output: response.usage?.completion_tokens || 0,
+      total: response.usage?.total_tokens || 0,
     }
 
-    return content
+    // Add viral CTA if configured
+    const viralCTA = process.env.VIRAL_CTA
+    const finalContent = viralCTA && type !== 'content_calendar' 
+      ? `${content}\n\n${viralCTA}` 
+      : content
+
+    return {
+      content: finalContent,
+      tokensUsed,
+    }
   } catch (error) {
     console.error('OpenAI API Error:', error)
     throw new Error('Failed to generate content')
@@ -99,7 +118,7 @@ Generate high-quality content that stands out and drives engagement.`
 
 export async function generateBulkContent(
   prompts: GenerateContentParams[]
-): Promise<string[]> {
+): Promise<GenerateContentResult[]> {
   const results = await Promise.all(prompts.map((params) => generateContent(params)))
   return results
 }

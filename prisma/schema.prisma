@@ -126,6 +126,8 @@ model Content {
   shared              Boolean     @default(false)
   metadata            Json?
   estimatedSeconds    Int         @default(0) // Estimated content duration in seconds
+  tokensUsed          Int         @default(0) // OpenAI tokens consumed
+  costUsd             Float       @default(0) // Actual cost in USD
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
 
@@ -134,6 +136,7 @@ model Content {
   @@index([userId])
   @@index([shareToken])
   @@index([createdAt])
+  @@index([costUsd]) // For cost analysis queries
 }
 
 model Analytics {
@@ -159,6 +162,24 @@ model SystemLog {
 
   @@index([level])
   @@index([createdAt])
+}
+
+model CostReport {
+  id                    String   @id @default(cuid())
+  reportDate            DateTime @unique // Date for the report period
+  totalRevenue          Float    // Total subscription revenue for the period
+  totalCost             Float    // Total OpenAI API costs for the period
+  netProfit             Float    // Revenue - Cost
+  profitMargin          Float    // (NetProfit / Revenue) * 100
+  totalGenerations      Int      // Number of content generations
+  averageCostPerGen     Float    // Average cost per generation
+  activeSubscriptions   Int      // Number of active subscriptions
+  freeGenerations       Int      // Number of free tier generations
+  metadata              Json?    // Additional metrics
+  createdAt             DateTime @default(now())
+
+  @@index([reportDate])
+  @@index([profitMargin])
 }
 
 model WebhookEvent {

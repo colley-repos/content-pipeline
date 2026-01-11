@@ -14,6 +14,7 @@ import {
   hasContentMinutesRemaining,
   formatMinutesRemaining,
 } from '@/lib/content-limits'
+import { calculateGenerationCost } from '@/lib/cost-tracking'
 
 const generateSchema = z.object({
   type: z.enum(['social_post', 'caption', 'script', 'bio', 'reply', 'content_calendar']),
@@ -121,8 +122,12 @@ async function handler(request: Request) {
     const body = await request.json()
     const params = generateSchema.parse(body)
 
-    // Generate content using OpenAI
-    const output = await generateContent(params)
+    // Generate content using OpenAI (now returns content + token usage)
+    const result = await generateContent(params)
+    const { content: output, tokensUsed } = result
+
+    // Calculate cost based on actual token usage
+    const costUsd = calculateGenerationCost(tokensUsed.input, tokensUsed.output)
 
     // Estimate actual content duration based on generated output
     const wordCount = countWords(output)
@@ -141,7 +146,7 @@ async function handler(request: Request) {
       })
     }
 
-    // Save to database
+    // Save to database with cost tracking
     const shareToken = generateShareToken()
     const content = await prisma.content.create({
       data: {
@@ -151,11 +156,18 @@ async function handler(request: Request) {
         output,
         shareToken,
         estimatedSeconds,
+        tokensUsed: tokensUsed.total,
+        costUsd,
         metadata: {
           context: params.context,
           tone: params.tone,
           length: params.length,
           wordCount,
+          tokenBreakdown: {
+            input: tokensUsed.input,
+            output: tokensUsed.output,
+            total: tokensUsed.total,
+          },
         },
       },
     })
