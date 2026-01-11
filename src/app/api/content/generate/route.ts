@@ -8,6 +8,12 @@ import { z } from 'zod'
 import { withSecurityHeaders } from '@/lib/security-headers'
 import { checkUserRateLimit, RATE_LIMITS, createRateLimitResponse } from '@/lib/rate-limit'
 import { sanitizedSchemas } from '@/lib/sanitization'
+import {
+  estimateContentDuration,
+  countWords,
+  hasContentMinutesRemaining,
+  formatMinutesRemaining,
+} from '@/lib/content-limits'
 
 const generateSchema = z.object({
   type: z.enum(['social_post', 'caption', 'script', 'bio', 'reply', 'content_calendar']),
@@ -39,6 +45,39 @@ async function handler(request: Request) {
     const hasActiveSubscription = user.subscription?.status === 'ACTIVE'
     const hasFreeCredits = user.freeCreditsRemaining > 0
 
+    // Check content minutes limit for subscribed users
+    if (hasActiveSubscription && user.subscription) {
+      const { contentMinutesUsed, contentMinutesLimit } = user.subscription
+
+      // Estimate content duration before generating (average of 500 words)
+      const estimatedSeconds = estimateContentDuration(
+        'social_post',
+        500 // Rough estimate before generation
+      )
+
+      if (
+        !hasContentMinutesRemaining(
+          contentMinutesUsed,
+          contentMinutesLimit,
+          estimatedSeconds
+        )
+      ) {
+        const usage = formatMinutesRemaining(
+          contentMinutesUsed,
+          contentMinutesLimit
+        )
+
+        return NextResponse.json(
+          {
+            error: 'Monthly content limit reached',
+            message: `You've used all ${contentMinutesLimit} minutes this month. Resets on ${user.subscription.currentPeriodEnd?.toLocaleDateString()}.`,
+            usage,
+          },
+          { status: 403 }
+        )
+      }
+    }
+
     // Apply different rate limits based on subscription status
     const rateLimit = hasActiveSubscription 
       ? RATE_LIMITS.CONTENT_GENERATE 
@@ -64,7 +103,7 @@ async function handler(request: Request) {
       return NextResponse.json(
         { 
           error: 'No credits remaining',
-          message: 'Upgrade to continue generating unlimited content',
+          message: 'Upgrade to continue generating content',
           creditsRemaining: 0
         },
         { status: 403 }
@@ -85,6 +124,23 @@ async function handler(request: Request) {
     // Generate content using OpenAI
     const output = await generateContent(params)
 
+    // Estimate actual content duration based on generated output
+    const wordCount = countWords(output)
+    const estimatedSeconds = estimateContentDuration(params.type, wordCount)
+
+    // Update subscription usage if subscribed
+    if (hasActiveSubscription && user.subscription) {
+      const minutesUsed = Math.ceil(estimatedSeconds / 60)
+      await prisma.subscription.update({
+        where: { id: user.subscription.id },
+        data: {
+          contentMinutesUsed: {
+            increment: minutesUsed,
+          },
+        },
+      })
+    }
+
     // Save to database
     const shareToken = generateShareToken()
     const content = await prisma.content.create({
@@ -94,10 +150,12 @@ async function handler(request: Request) {
         prompt: params.prompt,
         output,
         shareToken,
+        estimatedSeconds,
         metadata: {
           context: params.context,
           tone: params.tone,
           length: params.length,
+          wordCount,
         },
       },
     })
@@ -105,8 +163,16 @@ async function handler(request: Request) {
     // Get updated user data for response
     const updatedUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { freeCreditsRemaining: true },
+      include: { subscription: true },
     })
+
+    // Calculate usage stats
+    const usageStats = updatedUser?.subscription
+      ? formatMinutesRemaining(
+          updatedUser.subscription.contentMinutesUsed,
+          updatedUser.subscription.contentMinutesLimit
+        )
+      : null
 
     // Log analytics with detailed experiment tracking
     await prisma.analytics.create({
@@ -118,6 +184,8 @@ async function handler(request: Request) {
           type: params.type,
           usedFreeCredit: !hasActiveSubscription,
           creditsRemaining: updatedUser?.freeCreditsRemaining || 0,
+          contentSeconds: estimatedSeconds,
+          contentMinutesRemaining: usageStats?.remaining || null,
           experiment: 'free_credits_v1',
           isFirstGeneration: false, // Could track this too
         },

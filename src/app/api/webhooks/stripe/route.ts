@@ -4,6 +4,7 @@ import Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
 import { sendSubscriptionConfirmation } from '@/lib/email'
+import { getPlanFromPriceId } from '@/lib/content-limits'
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
@@ -103,12 +104,19 @@ export async function POST(request: Request) {
             session.subscription as string
           )
 
+          // Get plan details from price ID
+          const priceId = subscription.items.data[0].price.id
+          const { plan, limit } = getPlanFromPriceId(priceId)
+
           await prisma.subscription.update({
             where: { userId },
             data: {
               stripeSubscriptionId: subscription.id,
-              stripePriceId: subscription.items.data[0].price.id,
+              stripePriceId: priceId,
               status: 'ACTIVE',
+              plan,
+              contentMinutesLimit: limit,
+              contentMinutesUsed: 0, // Reset on new subscription
               currentPeriodStart: new Date(subscription.current_period_start * 1000),
               currentPeriodEnd: new Date(subscription.current_period_end * 1000),
             },
@@ -151,11 +159,26 @@ export async function POST(request: Request) {
         })
 
         if (dbSubscription) {
+          const previousPeriodEnd = dbSubscription.currentPeriodEnd
+          const newPeriodStart = new Date(subscription.current_period_start * 1000)
+
+          // Check if this is a billing period renewal (period changed)
+          const isRenewal =
+            previousPeriodEnd && newPeriodStart > previousPeriodEnd
+
+          // Get plan details to set/update limits
+          const priceId = subscription.items.data[0].price.id
+          const { plan, limit } = getPlanFromPriceId(priceId)
+
           await prisma.subscription.update({
             where: { id: dbSubscription.id },
             data: {
               status: subscription.status.toUpperCase() as any,
-              currentPeriodStart: new Date(subscription.current_period_start * 1000),
+              plan,
+              contentMinutesLimit: limit,
+              // Reset usage on renewal
+              ...(isRenewal && { contentMinutesUsed: 0 }),
+              currentPeriodStart: newPeriodStart,
               currentPeriodEnd: new Date(subscription.current_period_end * 1000),
               cancelAtPeriodEnd: subscription.cancel_at_period_end,
             },
@@ -168,6 +191,8 @@ export async function POST(request: Request) {
               metadata: {
                 status: subscription.status,
                 cancelAtPeriodEnd: subscription.cancel_at_period_end,
+                isRenewal,
+                usageReset: isRenewal,
               },
             },
           })

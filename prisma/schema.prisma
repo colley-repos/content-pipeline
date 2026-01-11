@@ -104,6 +104,9 @@ model Subscription {
   currentPeriodStart   DateTime?
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean            @default(false)
+  plan                 String?            // 'creator' or 'pro_creator'
+  contentMinutesLimit  Int                @default(0) // Minutes of content allowed per billing period
+  contentMinutesUsed   Int                @default(0) // Minutes of content used this period
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
@@ -114,16 +117,17 @@ model Subscription {
 }
 
 model Content {
-  id          String      @id @default(cuid())
-  userId      String
-  type        ContentType
-  prompt      String      @db.Text
-  output      String      @db.Text
-  shareToken  String?     @unique
-  shared      Boolean     @default(false)
-  metadata    Json?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id                  String      @id @default(cuid())
+  userId              String
+  type                ContentType
+  prompt              String      @db.Text
+  output              String      @db.Text
+  shareToken          String?     @unique
+  shared              Boolean     @default(false)
+  metadata            Json?
+  estimatedSeconds    Int         @default(0) // Estimated content duration in seconds
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

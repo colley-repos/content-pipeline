@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { formatMinutesRemaining } from '@/lib/content-limits'
 
 export async function GET() {
   try {
@@ -18,6 +19,10 @@ export async function GET() {
         subscription: {
           select: {
             status: true,
+            plan: true,
+            contentMinutesLimit: true,
+            contentMinutesUsed: true,
+            currentPeriodStart: true,
             currentPeriodEnd: true,
             cancelAtPeriodEnd: true,
           },
@@ -29,10 +34,19 @@ export async function GET() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    // Format usage info for subscribed users
+    const usageInfo = user.subscription
+      ? formatMinutesRemaining(
+          user.subscription.contentMinutesUsed,
+          user.subscription.contentMinutesLimit
+        )
+      : null
+
     return NextResponse.json({
       freeCreditsRemaining: user.freeCreditsRemaining,
       hasActiveSubscription: user.subscription?.status === 'ACTIVE',
       subscription: user.subscription,
+      usage: usageInfo,
     })
   } catch (error) {
     console.error('User status error:', error)
