@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { SoundLibrary } from './sound-library'
+import { VoiceOverRecorder } from './voice-over-recorder'
 import { 
   Play, 
   Pause, 
@@ -69,6 +70,7 @@ export function VideoEditor({ contentId, videoUrl, duration = 60, onSave, onComp
   const [jumpCutFrequency, setJumpCutFrequency] = useState(5) // cuts per minute
   const [musicVolume, setMusicVolume] = useState(70)
   const [showSoundLibrary, setShowSoundLibrary] = useState(false)
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false)
   const [recommendations, setRecommendations] = useState<any[]>([])
   const [loadingRecommendations, setLoadingRecommendations] = useState(true)
 
@@ -130,10 +132,18 @@ export function VideoEditor({ contentId, videoUrl, duration = 60, onSave, onComp
   }
 
   const addVoiceOver = () => {
+    setShowVoiceRecorder(true)
+  }
+
+  const handleVoiceOverSave = (audioUrl: string, duration: number) => {
     setEditOps([...editOps, {
       type: 'voiceover',
       timestamp: currentTime,
-      duration: 5, // default 5 seconds
+      duration,
+      data: {
+        audioUrl,
+        volume: 100,
+      },
     }])
   }
 
@@ -468,6 +478,14 @@ export function VideoEditor({ contentId, videoUrl, duration = 60, onSave, onComp
           <SoundLibrary onAddSound={handleAddSound} />
         </DialogContent>
       </Dialog>
+
+      {/* Voice-Over Recorder Dialog */}
+      <VoiceOverRecorder
+        open={showVoiceRecorder}
+        onOpenChange={setShowVoiceRecorder}
+        onSave={handleVoiceOverSave}
+        currentTime={currentTime}
+      />
     </div>
   )
 }
