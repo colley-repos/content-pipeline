@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/cost-analysis",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/sync-analytics",
+      "schedule": "0 */6 * * *"
     }
   ]
 }

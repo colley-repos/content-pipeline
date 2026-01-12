@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,17 +12,16 @@ import {
   Mic, 
   Volume2, 
   Wand2,
-  Download,
   Sparkles,
-  Check,
   Loader2
 } from 'lucide-react'
 
 interface VideoEditorProps {
   contentId: string
   videoUrl: string
-  duration: number
+  duration?: number
   onSave?: (editId: string) => void
+  onComplete?: () => void
 }
 
 interface EditOperation {
@@ -40,15 +39,14 @@ const VIBE_PRESETS = [
   { id: 'dramatic', name: 'Dramatic', emoji: '🎭', description: 'Bold, emotional' },
 ]
 
-export function VideoEditor({ contentId, videoUrl, duration, onSave }: VideoEditorProps) {
+export function VideoEditor({ contentId, videoUrl, duration = 60, onSave, onComplete }: VideoEditorProps) {
   const [isPlaying, setIsPlaying] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
+  const [currentTime] = useState(0)
   const [selectedVibe, setSelectedVibe] = useState<string | null>(null)
   const [editOps, setEditOps] = useState<EditOperation[]>([])
   const [processing, setProcessing] = useState(false)
   const [jumpCutFrequency, setJumpCutFrequency] = useState(5) // cuts per minute
   const [musicVolume, setMusicVolume] = useState(70)
-  const [showPreview, setShowPreview] = useState(false)
 
   const handleVibeSelect = async (vibeId: string) => {
     setSelectedVibe(vibeId)
@@ -97,14 +95,6 @@ export function VideoEditor({ contentId, videoUrl, duration, onSave }: VideoEdit
     }])
   }
 
-  const addSoundEffect = (effectId: string) => {
-    setEditOps([...editOps, {
-      type: 'soundfx',
-      timestamp: currentTime,
-      data: { effectId },
-    }])
-  }
-
   const removeOperation = (index: number) => {
     setEditOps(editOps.filter((_, i) => i !== index))
   }
@@ -137,8 +127,13 @@ export function VideoEditor({ contentId, videoUrl, duration, onSave }: VideoEdit
       if (onSave) {
         onSave(data.editId)
       }
-
-      setShowPreview(true)
+      
+      // Call onComplete after successful edit
+      if (onComplete) {
+        setTimeout(() => {
+          onComplete()
+        }, 1000) // Small delay to show success state
+      }
     } catch (error) {
       console.error('Processing error:', error)
       alert('Failed to process video. Please try again.')

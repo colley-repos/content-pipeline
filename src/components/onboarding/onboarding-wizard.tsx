@@ -91,7 +91,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
             <p className="text-gray-600">
               {step === 1 
                 ? "This helps us recommend the best editing styles for your videos"
-                : "Select editing styles you'd like us to apply to your content"
+                : "Select editing styles you&apos;d like us to apply to your content"
               }
             </p>
             <div className="flex justify-center gap-2 mt-4">

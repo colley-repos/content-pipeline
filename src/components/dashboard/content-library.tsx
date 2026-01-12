@@ -15,6 +15,7 @@ import {
   Calendar,
   Clock
 } from 'lucide-react'
+import { EditVideoDialog } from './edit-video-dialog'
 
 interface ContentItem {
   id: string
@@ -33,6 +34,7 @@ export function ContentLibrary() {
   const [content, setContent] = useState<ContentItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'ready' | 'published'>('ready')
+  const [editingContent, setEditingContent] = useState<{ id: string; url: string } | null>(null)
 
   useEffect(() => {
     fetchContent()
@@ -180,6 +182,11 @@ export function ContentLibrary() {
                 <div className="flex gap-2 pt-2">
                   {!item.published ? (
                     <>
+                        size="sm" 
+                        className="flex-1" 
+                        variant="outline"
+                        onClick={() => setEditingContent({ id: item.id, url: item.output })}
+                      
                       <Button size="sm" className="flex-1" variant="outline">
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
@@ -202,6 +209,20 @@ export function ContentLibrary() {
                   <Calendar className="h-3 w-3" />
                   {new Date(item.createdAt).toLocaleDateString()}
                 </div>
+
+      {/* Edit Video Dialog */}
+      {editingContent && (
+        <EditVideoDialog
+          contentId={editingContent.id}
+          videoUrl={editingContent.url}
+          isOpen={!!editingContent}
+          onClose={() => setEditingContent(null)}
+          onEditComplete={() => {
+            setEditingContent(null)
+            fetchContent() // Refresh content list
+          }}
+        />
+      )}
               </CardContent>
             </Card>
           ))}
