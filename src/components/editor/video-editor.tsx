@@ -5,6 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Slider } from '@/components/ui/slider'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { SoundLibrary } from './sound-library'
 import { 
   Play, 
   Pause, 
@@ -13,7 +21,8 @@ import {
   Volume2, 
   Wand2,
   Sparkles,
-  Loader2
+  Loader2,
+  Music
 } from 'lucide-react'
 
 interface VideoEditorProps {
@@ -29,6 +38,18 @@ interface EditOperation {
   timestamp: number
   duration?: number
   data?: any
+}
+
+interface SoundAsset {
+  id: string
+  name: string
+  category: 'music' | 'sound_effect' | 'voice_over'
+  vibe: string[]
+  fileUrl: string
+  duration: number
+  bpm: number | null
+  tags: string[]
+  usageCount: number
 }
 
 const VIBE_PRESETS = [
@@ -47,6 +68,7 @@ export function VideoEditor({ contentId, videoUrl, duration = 60, onSave, onComp
   const [processing, setProcessing] = useState(false)
   const [jumpCutFrequency, setJumpCutFrequency] = useState(5) // cuts per minute
   const [musicVolume, setMusicVolume] = useState(70)
+  const [showSoundLibrary, setShowSoundLibrary] = useState(false)
 
   const handleVibeSelect = async (vibeId: string) => {
     setSelectedVibe(vibeId)
@@ -93,6 +115,21 @@ export function VideoEditor({ contentId, videoUrl, duration = 60, onSave, onComp
       timestamp: currentTime,
       duration: 5, // default 5 seconds
     }])
+  }
+
+  const handleAddSound = (sound: SoundAsset) => {
+    setEditOps([...editOps, {
+      type: 'soundfx',
+      timestamp: currentTime,
+      duration: sound.duration,
+      data: {
+        soundId: sound.id,
+        name: sound.name,
+        fileUrl: sound.fileUrl,
+        category: sound.category,
+      },
+    }])
+    setShowSoundLibrary(false)
   }
 
   const removeOperation = (index: number) => {
@@ -296,6 +333,15 @@ export function VideoEditor({ contentId, videoUrl, duration = 60, onSave, onComp
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setShowSoundLibrary(true)}
+              className="w-full"
+            >
+              <Music className="w-4 h-4 mr-2" />
+              Browse Sound Library
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={addVoiceOver}
               className="w-full"
             >
@@ -324,6 +370,9 @@ export function VideoEditor({ contentId, videoUrl, duration = 60, onSave, onComp
                     {op.type === 'voiceover' && <Mic className="w-4 h-4" />}
                     {op.type === 'soundfx' && <Volume2 className="w-4 h-4" />}
                     <span className="capitalize font-medium">{op.type}</span>
+                    {op.data?.name && (
+                      <span className="text-sm text-gray-500">- {op.data.name}</span>
+                    )}
                     <Badge variant="outline">{op.timestamp.toFixed(1)}s</Badge>
                   </div>
                   <Button
@@ -369,6 +418,19 @@ export function VideoEditor({ contentId, videoUrl, duration = 60, onSave, onComp
           )}
         </Button>
       </div>
+
+      {/* Sound Library Modal */}
+      <Dialog open={showSoundLibrary} onOpenChange={setShowSoundLibrary}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Sound Library</DialogTitle>
+            <DialogDescription>
+              Browse music, sound effects, and voice-overs to add to your video
+            </DialogDescription>
+          </DialogHeader>
+          <SoundLibrary onAddSound={handleAddSound} />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
