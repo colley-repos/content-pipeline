@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
@@ -9,6 +9,7 @@ import { CreditsDisplay } from '@/components/dashboard/credits-display'
 import { AnalyticsDashboard } from '@/components/dashboard/analytics-dashboard'
 import { ContentLibrary } from '@/components/dashboard/content-library'
 import { ContentGenerator } from '@/components/dashboard/content-generator'
+import { OnboardingWizard } from '@/components/onboarding/onboarding-wizard'
 import { BarChart3, Video, PlusCircle } from 'lucide-react'
 
 type Tab = 'analytics' | 'library' | 'create'
@@ -16,14 +17,80 @@ type Tab = 'analytics' | 'library' | 'create'
 export default function DashboardPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<Tab>('analytics')
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [checkingProfile, setCheckingProfile] = useState(true)
+
+  useEffect(() => {
+    const checkUserProfile = async () => {
+      try {
+        const response = await fetch('/api/profile')
+        if (response.ok) {
+          const data = await response.json()
+          // Show onboarding if no profile exists
+          if (!data.profile) {
+            setShowOnboarding(true)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to check user profile:', error)
+      } finally {
+        setCheckingProfile(false)
+      }
+    }
+
+    checkUserProfile()
+  }, [])
+
+  const handleOnboardingComplete = async (creatorType: string, vibes: string[]) => {
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          creatorType,
+          preferredVibes: vibes,
+        }),
+      })
+
+      if (response.ok) {
+        setShowOnboarding(false)
+      }
+    } catch (error) {
+      console.error('Failed to save profile:', error)
+    }
+  }
+
+  const handleOnboardingSkip = () => {
+    setShowOnboarding(false)
+  }
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
     router.push('/')
   }
 
+  // Don't render content while checking profile
+  if (checkingProfile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Onboarding Wizard */}
+      {showOnboarding && (
+        <OnboardingWizard
+          onComplete={handleOnboardingComplete}
+          onSkip={handleOnboardingSkip}
+        />
+      )}
+
       {/* Header */}
       <header className="bg-white border-b">
         <div className="container mx-auto px-4 py-4">
