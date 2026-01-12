@@ -2,9 +2,13 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { createVideoProcessor } from '@/lib/video-processor'
+import * as path from 'path'
+import * as os from 'os'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
+export const maxDuration = 300 // 5 minutes max execution (adjust for your plan)
 
 interface ProcessRequest {
   contentId: string
@@ -52,21 +56,10 @@ export async function POST(req: Request) {
       },
     })
 
-    // TODO: Queue video processing job
-    // This would typically be handled by a background worker (e.g., BullMQ, AWS Lambda)
-    // For now, we'll simulate the processing
-    
-    // In production, you would:
-    // 1. Upload video to storage (S3, Cloudflare R2, etc.)
-    // 2. Send job to processing queue with:
-    //    - videoEdit.id
-    //    - operations array (jump cuts, voice-overs, etc.)
-    //    - settings (volumes, frequencies, etc.)
-    // 3. Worker processes video using FFmpeg
-    // 4. Updates videoEdit.status, editedVideoUrl, renderProgress
-
-    // For now, return the edit record and simulate async processing
-    simulateVideoProcessing(videoEdit.id)
+    // Process video in background
+    // NOTE: For production, offload this to AWS Lambda or a queue system (BullMQ)
+    // This is a simplified implementation for development
+    processVideoInBackground(videoEdit.id, videoUrl, operations, settings)
 
     return NextResponse.json({
       editId: videoEdit.id,
@@ -82,25 +75,132 @@ export async function POST(req: Request) {
   }
 }
 
-async function simulateVideoProcessing(editId: string) {
-  // Simulate processing time
-  setTimeout(async () => {
+/**
+ * Process video in background
+ * 
+ * PRODUCTION CONSIDERATIONS:
+ * 1. Use AWS Lambda with FFmpeg layer for serverless processing
+ * 2. Use queue system (SQS, BullMQ) for job management
+ * 3. Upload to S3/R2 for storage
+ * 4. Implement retry logic for failed jobs
+ * 5. Send webhooks/notifications on completion
+ * 
+ * For local development, this runs inline but doesn't block the response.
+ */
+async function processVideoInBackground(
+  editId: string,
+  videoUrl: string,
+  operations: any[],
+  settings: any
+) {
+  setImmediate(async () => {
     try {
+      // Create processor instance
+      const tempDir = process.env.TEMP_DIR || os.tmpdir()
+      const processor = createVideoProcessor(tempDir)
+
+      // Update progress to 10%
+      await prisma.videoEdit.update({
+        where: { id: editId },
+        data: { renderProgress: 10 },
+      })
+
+      // Process video with FFmpeg
+      const result = await processor.processVideo({
+        videoUrl,
+        operations,
+        settings,
+        outputPath: path.join(tempDir, `edited-${editId}.mp4`),
+      })
+
+      if (result.success && result.outputPath) {
+        // TODO: Upload to storage (S3, R2, etc.)
+        // For now, we'll use a placeholder URL
+        const uploadedUrl = await uploadToStorage(result.outputPath, editId)
+
+        // Update edit record with success
+        await prisma.videoEdit.update({
+          where: { id: editId },
+          data: {
+            status: 'completed',
+            editedVideoUrl: uploadedUrl,
+            renderProgress: 100,
+            processingTime: Math.round(result.processingTime / 1000), // Convert to seconds
+          },
+        })
+
+        // Save to editing history for ML recommendations
+        await saveEditingHistory(editId)
+
+        console.log(`✅ Video edit ${editId} completed successfully`)
+      } else {
+        // Processing failed
+        await prisma.videoEdit.update({
+          where: { id: editId },
+          data: {
+            status: 'failed',
+            renderProgress: 0,
+            processingTime: Math.round(result.processingTime / 1000),
+          },
+        })
+
+        console.error(`❌ Video edit ${editId} failed:`, result.error)
+      }
+    } catch (error) {
+      console.error(`❌ Video edit ${editId} error:`, error)
+      
+      // Update with error status
       await prisma.videoEdit.update({
         where: { id: editId },
         data: {
-          status: 'completed',
-          editedVideoUrl: 'https://example.com/edited-video.mp4', // Placeholder
-          renderProgress: 100,
-          processingTime: 30, // 30 seconds
+          status: 'failed',
+          renderProgress: 0,
         },
-      })
-
-      // TODO: Send notification to user (email, push notification, etc.)
-    } catch (error) {
-      console.error('Failed to update video edit status:', error)
+      }).catch(console.error)
     }
-  }, 5000) // 5 seconds for demo
+  })
+}
+
+/**
+ * Upload processed video to storage
+ * 
+ * PRODUCTION: Implement actual S3/R2 upload
+ */
+async function uploadToStorage(filePath: string, editId: string): Promise<string> {
+  // TODO: Implement actual upload to S3/Cloudflare R2
+  // For development, return placeholder
+  
+  console.log(`📤 Would upload ${filePath} to storage`)
+  
+  // Return placeholder URL
+  return `https://storage.example.com/edited-videos/${editId}.mp4`
+}
+
+/**
+ * Save editing operation to history for recommendation engine
+ */
+async function saveEditingHistory(editId: string): Promise<void> {
+  try {
+    const edit = await prisma.videoEdit.findUnique({
+      where: { id: editId },
+      include: { preset: true },
+    })
+
+    if (!edit) return
+
+    await prisma.editingHistory.create({
+      data: {
+        userId: edit.userId,
+        contentId: edit.contentId,
+        presetId: edit.presetId,
+        operations: edit.editOperations,
+        wasPublished: false, // Will be updated when content is published
+        engagementScore: 0, // Will be updated from analytics
+      },
+    })
+  } catch (error) {
+    console.error('Failed to save editing history:', error)
+  }
 }
 
 export async function GET(req: Request) {
