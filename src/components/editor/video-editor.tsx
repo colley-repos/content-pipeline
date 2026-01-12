@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Slider } from '@/components/ui/slider'
+import { Progress } from '@/components/ui/progress'
 import {
   Dialog,
   DialogContent,
@@ -67,6 +68,8 @@ export function VideoEditor({ contentId, videoUrl, duration = 60, onSave, onComp
   const [selectedVibe, setSelectedVibe] = useState<string | null>(null)
   const [editOps, setEditOps] = useState<EditOperation[]>([])
   const [processing, setProcessing] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [progressMessage, setProgressMessage] = useState('')
   const [jumpCutFrequency, setJumpCutFrequency] = useState(5) // cuts per minute
   const [musicVolume, setMusicVolume] = useState(70)
   const [showSoundLibrary, setShowSoundLibrary] = useState(false)
@@ -168,6 +171,8 @@ export function VideoEditor({ contentId, videoUrl, duration = 60, onSave, onComp
 
   const handleApplyEdits = async () => {
     setProcessing(true)
+    setProgress(0)
+    setProgressMessage('Starting video processing...')
     
     try {
       const response = await fetch('/api/editing/process', {
@@ -191,20 +196,44 @@ export function VideoEditor({ contentId, videoUrl, duration = 60, onSave, onComp
 
       const data = await response.json()
       
-      if (onSave) {
-        onSave(data.editId)
+      // Subscribe to progress updates via SSE
+      const eventSource = new EventSource(`/api/editing/progress?editId=${data.editId}`)
+      
+      eventSource.onmessage = (event) => {
+        const progressData = JSON.parse(event.data)
+        setProgress(progressData.progress)
+        setProgressMessage(progressData.message || '')
+        
+        // Close connection when completed or failed
+        if (progressData.status === 'completed') {
+          eventSource.close()
+          setProcessing(false)
+          
+          if (onSave) {
+            onSave(data.editId)
+          }
+          
+          // Call onComplete after successful edit
+          if (onComplete) {
+            setTimeout(() => {
+              onComplete()
+            }, 1000) // Small delay to show success state
+          }
+        } else if (progressData.status === 'failed') {
+          eventSource.close()
+          setProcessing(false)
+          alert(`Processing failed: ${progressData.message || 'Unknown error'}`)
+        }
       }
       
-      // Call onComplete after successful edit
-      if (onComplete) {
-        setTimeout(() => {
-          onComplete()
-        }, 1000) // Small delay to show success state
+      eventSource.onerror = (error) => {
+        console.error('SSE error:', error)
+        eventSource.close()
+        setProcessing(false)
       }
     } catch (error) {
       console.error('Processing error:', error)
       alert('Failed to process video. Please try again.')
-    } finally {
       setProcessing(false)
     }
   }
@@ -465,6 +494,24 @@ export function VideoEditor({ contentId, videoUrl, duration = 60, onSave, onComp
           )}
         </Button>
       </div>
+
+      {/* Progress Bar */}
+      {processing && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Processing Video</span>
+                <span className="text-sm text-gray-600">{progress}%</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+              {progressMessage && (
+                <p className="text-sm text-gray-500">{progressMessage}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Sound Library Modal */}
       <Dialog open={showSoundLibrary} onOpenChange={setShowSoundLibrary}>

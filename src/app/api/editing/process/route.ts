@@ -95,22 +95,27 @@ async function processVideoInBackground(
 ) {
   setImmediate(async () => {
     try {
+      // Import progress functions
+      const { updateProgress, completeProgress, failProgress } = await import('@/lib/progress-store')
+
       // Create processor instance
       const tempDir = process.env.TEMP_DIR || os.tmpdir()
       const processor = createVideoProcessor(tempDir)
 
-      // Update progress to 10%
-      await prisma.videoEdit.update({
-        where: { id: editId },
-        data: { renderProgress: 10 },
-      })
-
-      // Process video with FFmpeg
+      // Process video with FFmpeg and progress callbacks
       const result = await processor.processVideo({
         videoUrl,
         operations,
         settings,
         outputPath: path.join(tempDir, `edited-${editId}.mp4`),
+        onProgress: (progress, message) => {
+          updateProgress(editId, progress, message)
+          // Also update database for persistence
+          prisma.videoEdit.update({
+            where: { id: editId },
+            data: { renderProgress: progress },
+          }).catch(err => console.error('Failed to update DB progress:', err))
+        },
       })
 
       if (result.success && result.outputPath) {
@@ -129,12 +134,17 @@ async function processVideoInBackground(
           },
         })
 
+        // Mark progress as complete
+        completeProgress(editId, 'Video processing completed successfully')
+
         // Save to editing history for ML recommendations
         await saveEditingHistory(editId)
 
         console.log(`✅ Video edit ${editId} completed successfully`)
       } else {
         // Processing failed
+        failProgress(editId, result.error || 'Video processing failed')
+        
         await prisma.videoEdit.update({
           where: { id: editId },
           data: {
@@ -148,6 +158,10 @@ async function processVideoInBackground(
       }
     } catch (error) {
       console.error(`❌ Video edit ${editId} error:`, error)
+      
+      // Mark progress as failed
+      const { failProgress } = await import('@/lib/progress-store')
+      failProgress(editId, error instanceof Error ? error.message : 'Unknown error')
       
       // Update with error status
       await prisma.videoEdit.update({

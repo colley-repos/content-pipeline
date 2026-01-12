@@ -21,6 +21,7 @@ interface ProcessingOptions {
     musicVolume?: number
   }
   outputPath?: string
+  onProgress?: (progress: number, message?: string) => void
 }
 
 interface ProcessingResult {
@@ -51,13 +52,18 @@ export class VideoProcessor {
    */
   async processVideo(options: ProcessingOptions): Promise<ProcessingResult> {
     const startTime = Date.now()
+    const { onProgress } = options
     
     try {
+      // Report progress: Starting
+      onProgress?.(0, 'Initializing video processing...')
+
       // Create temporary working directory
       const workDir = path.join(this.tempDir, `video-${randomUUID()}`)
       await fs.mkdir(workDir, { recursive: true })
 
       // Download input video
+      onProgress?.(10, 'Downloading video...')
       const inputPath = await this.downloadVideo(options.videoUrl, workDir)
 
       // Sort operations by timestamp
@@ -72,20 +78,27 @@ export class VideoProcessor {
 
       // Apply jump cuts first
       if (jumpCuts.length > 0) {
+        onProgress?.(30, `Applying ${jumpCuts.length} jump cuts...`)
         currentVideoPath = await this.applyJumpCuts(currentVideoPath, jumpCuts, workDir)
+        onProgress?.(60, 'Jump cuts completed')
       }
 
       // Apply audio overlays
       if (audioOps.length > 0) {
+        onProgress?.(70, `Adding ${audioOps.length} audio overlays...`)
         currentVideoPath = await this.applyAudioOverlays(currentVideoPath, audioOps, options.settings, workDir)
+        onProgress?.(90, 'Audio overlays completed')
       }
 
       // Final output path
+      onProgress?.(95, 'Finalizing video...')
       const outputPath = options.outputPath || path.join(workDir, 'final-output.mp4')
       await fs.copyFile(currentVideoPath, outputPath)
 
       // Cleanup temporary files
       await this.cleanup(workDir, outputPath)
+
+      onProgress?.(100, 'Video processing completed successfully')
 
       const processingTime = Date.now() - startTime
 
