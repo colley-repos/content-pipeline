@@ -53,6 +53,9 @@ model User {
   contents      Content[]
   analytics     Analytics[]
   socialAccounts SocialAccount[]
+  userProfile   UserProfile?
+  videoEdits    VideoEdit[]
+  editingHistory EditingHistory[]
 
   // Performance indexes
   @@index([email])
@@ -135,6 +138,7 @@ model Content {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   publications Publication[]
+  videoEdits VideoEdit[]
 
   @@index([userId])
   @@index([shareToken])
@@ -243,6 +247,119 @@ model Publication {
   @@index([platform])
   @@index([status])
   @@index([publishedAt])
+}
+
+// User Profile & Preferences for AI recommendations
+model UserProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  creatorType       String?  // food, fashion, travel, cars, rave, cosplay, etc.
+  preferredVibes    String[] // energetic, chill, professional, funny, dramatic
+  editingStyle      Json?    // preferred editing patterns (jump cut frequency, music volume, etc.)
+  soundPreferences  Json?    // favorite sound effects, music genres
+  colorGrading      String?  // preferred color grading style
+  metadata          Json?    // additional preferences
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([creatorType])
+}
+
+// Video Editing Presets (Vibe-based templates)
+model EditingPreset {
+  id                String   @id @default(cuid())
+  name              String   @unique // "Energetic", "Chill Vibes", "Professional", etc.
+  description       String?
+  vibeCategory      String   // energetic, chill, professional, funny, dramatic
+  creatorTypes      String[] // which creator types this vibe suits
+  jumpCutFrequency  Float    @default(0) // cuts per minute (0 = none, 10 = very frequent)
+  transitionStyle   String?  // fade, cut, zoom, slide
+  musicTempo        String?  // upbeat, medium, slow
+  soundEffects      String[] // array of sound effect IDs to include
+  colorFilter       String?  // filter/grading preset name
+  textStyle         Json?    // caption/text overlay styles
+  isPublic          Boolean  @default(true)
+  usageCount        Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  videoEdits VideoEdit[]
+
+  @@index([vibeCategory])
+  @@index([isPublic])
+  @@index([usageCount])
+}
+
+// Video Edit Records (tracks edits applied to content)
+model VideoEdit {
+  id                String   @id @default(cuid())
+  contentId         String
+  userId            String
+  presetId          String?  // if using a preset
+  status            String   @default("draft") // draft, processing, completed, failed
+  originalVideoUrl  String?  @db.Text
+  editedVideoUrl    String?  @db.Text
+  editOperations    Json     // detailed edit operations (cuts, overlays, effects)
+  renderProgress    Int      @default(0) // 0-100%
+  processingTime    Int      @default(0) // seconds
+  approved          Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preset EditingPreset? @relation(fields: [presetId], references: [id])
+
+  @@index([contentId])
+  @@index([userId])
+  @@index([presetId])
+  @@index([status])
+  @@index([approved])
+}
+
+// Sound Assets Library (royalty-free music & effects)
+model SoundAsset {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  category        String   // music, sound_effect, voice_over
+  vibe            String[] // energetic, chill, funny, dramatic, professional
+  fileUrl         String   @db.Text
+  duration        Int      // seconds
+  waveformUrl     String?  @db.Text // visual waveform for preview
+  tags            String[] // searchable tags
+  bpm             Int?     // beats per minute (for music)
+  isRoyaltyFree   Boolean  @default(true)
+  usageCount      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([category])
+  @@index([vibe])
+  @@index([isRoyaltyFree])
+  @@index([usageCount])
+}
+
+// User Editing History for ML/preference learning
+model EditingHistory {
+  id                String   @id @default(cuid())
+  userId            String
+  videoEditId       String
+  action            String   // preset_applied, manual_edit, approved, rejected
+  presetUsed        String?  // preset name
+  manualAdjustments Json?    // what they changed from preset
+  approved          Boolean  // did they approve this style?
+  timestamp         DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+  @@index([approved])
+  @@index([timestamp])
 }
 
 model WebhookEvent {
