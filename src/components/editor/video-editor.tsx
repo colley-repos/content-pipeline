@@ -69,6 +69,26 @@ export function VideoEditor({ contentId, videoUrl, duration = 60, onSave, onComp
   const [jumpCutFrequency, setJumpCutFrequency] = useState(5) // cuts per minute
   const [musicVolume, setMusicVolume] = useState(70)
   const [showSoundLibrary, setShowSoundLibrary] = useState(false)
+  const [recommendations, setRecommendations] = useState<any[]>([])
+  const [loadingRecommendations, setLoadingRecommendations] = useState(true)
+
+  // Fetch recommendations on mount
+  useState(() => {
+    const fetchRecommendations = async () => {
+      try {
+        const response = await fetch('/api/recommendations/vibes')
+        if (response.ok) {
+          const data = await response.json()
+          setRecommendations(data.recommendations || [])
+        }
+      } catch (error) {
+        console.error('Failed to load recommendations:', error)
+      } finally {
+        setLoadingRecommendations(false)
+      }
+    }
+    fetchRecommendations()
+  })
 
   const handleVibeSelect = async (vibeId: string) => {
     setSelectedVibe(vibeId)
@@ -249,25 +269,42 @@ export function VideoEditor({ contentId, videoUrl, duration = 60, onSave, onComp
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {VIBE_PRESETS.map((vibe) => (
-              <button
-                key={vibe.id}
-                onClick={() => handleVibeSelect(vibe.id)}
-                className={`p-4 rounded-lg border-2 transition-all text-center ${
-                  selectedVibe === vibe.id
-                    ? 'border-purple-600 bg-purple-50'
-                    : 'border-gray-200 hover:border-purple-300'
-                }`}
-              >
-                <div className="text-3xl mb-2">{vibe.emoji}</div>
-                <div className={`font-semibold mb-1 ${
-                  selectedVibe === vibe.id ? 'text-purple-600' : 'text-gray-900'
-                }`}>
-                  {vibe.name}
-                </div>
-                <div className="text-xs text-gray-600">{vibe.description}</div>
-              </button>
-            ))}
+            {VIBE_PRESETS.map((vibe) => {
+              const recommendation = recommendations.find(r => r.vibeId === vibe.id);
+              
+              return (
+                <button
+                  key={vibe.id}
+                  onClick={() => handleVibeSelect(vibe.id)}
+                  className={`p-4 rounded-lg border-2 transition-all text-center relative ${
+                    selectedVibe === vibe.id
+                      ? 'border-purple-600 bg-purple-50'
+                      : 'border-gray-200 hover:border-purple-300'
+                  }`}
+                >
+                  {recommendation && (
+                    <div className="absolute top-2 right-2">
+                      <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        {recommendation.confidence}%
+                      </Badge>
+                    </div>
+                  )}
+                  <div className="text-3xl mb-2">{vibe.emoji}</div>
+                  <div className={`font-semibold mb-1 ${
+                    selectedVibe === vibe.id ? 'text-purple-600' : 'text-gray-900'
+                  }`}>
+                    {vibe.name}
+                  </div>
+                  <div className="text-xs text-gray-600">{vibe.description}</div>
+                  {recommendation && (
+                    <div className="text-xs text-gray-500 mt-1 italic">
+                      {recommendation.reason}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>

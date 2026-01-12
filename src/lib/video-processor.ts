@@ -2,7 +2,7 @@ import { exec } from 'child_process'
 import { promisify } from 'util'
 import * as fs from 'fs/promises'
 import * as path from 'path'
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'crypto'
 
 const execAsync = promisify(exec)
 
@@ -54,7 +54,7 @@ export class VideoProcessor {
     
     try {
       // Create temporary working directory
-      const workDir = path.join(this.tempDir, `video-${uuidv4()}`)
+      const workDir = path.join(this.tempDir, `video-${randomUUID()}`)
       await fs.mkdir(workDir, { recursive: true })
 
       // Download input video

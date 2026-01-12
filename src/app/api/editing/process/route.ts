@@ -191,11 +191,11 @@ async function saveEditingHistory(editId: string): Promise<void> {
     await prisma.editingHistory.create({
       data: {
         userId: edit.userId,
-        contentId: edit.contentId,
-        presetId: edit.presetId,
-        operations: edit.editOperations,
-        wasPublished: false, // Will be updated when content is published
-        engagementScore: 0, // Will be updated from analytics
+        videoEditId: editId,
+        action: 'preset_applied',
+        presetUsed: edit.preset?.name || null,
+        manualAdjustments: edit.editOperations || {},
+        approved: false, // Will be updated when user approves
       },
     })
   } catch (error) {
