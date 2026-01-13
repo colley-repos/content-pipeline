@@ -10,6 +10,7 @@ import { AnalyticsDashboard } from '@/components/dashboard/analytics-dashboard'
 import { ContentLibrary } from '@/components/dashboard/content-library'
 import { ContentGenerator } from '@/components/dashboard/content-generator'
 import { OnboardingWizard } from '@/components/onboarding/onboarding-wizard'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { BarChart3, Video, PlusCircle } from 'lucide-react'
 
 type Tab = 'analytics' | 'library' | 'create'
@@ -72,17 +73,17 @@ export default function DashboardPage() {
   // Don't render content while checking profile
   if (checkingProfile) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Onboarding Wizard */}
       {showOnboarding && (
         <OnboardingWizard
@@ -92,13 +93,14 @@ export default function DashboardPage() {
       )}
 
       {/* Header */}
-      <header className="bg-white border-b">
+      <header className="bg-card border-b">
         <div className="container mx-auto px-4 py-4">
           <nav className="flex justify-between items-center">
             <div className="text-2xl font-bold text-purple-600">
               AI Content Generator
             </div>
             <div className="flex items-center space-x-4">
+              <ThemeToggle />
               <Link href="/pricing">
                 <Button variant="ghost">Pricing</Button>
               </Link>

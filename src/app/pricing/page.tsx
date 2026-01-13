@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Check } from 'lucide-react'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 export default function PricingPage() {
   const router = useRouter()
@@ -33,7 +34,7 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
       <header className="container mx-auto px-4 py-6">
         <nav className="flex justify-between items-center">
@@ -42,7 +43,8 @@ export default function PricingPage() {
               Synthia
             </div>
           </Link>
-          <div className="space-x-4">
+          <div className="flex items-center space-x-4">
+            <ThemeToggle />
             <Link href="/login">
               <Button variant="ghost">Sign In</Button>
             </Link>
@@ -57,7 +59,7 @@ export default function PricingPage() {
       <section className="container mx-auto px-4 py-20">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Get Your Time Back</h1>
-          <p className="text-xl text-gray-600">Stop spending hours creating content. Let us handle it.</p>
+          <p className="text-xl text-muted-foreground">Stop spending hours creating content. Let us handle it.</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -68,7 +70,7 @@ export default function PricingPage() {
               <CardDescription>For aspiring influencers ready to level up</CardDescription>
               <div className="mt-4">
                 <span className="text-4xl font-bold">$29</span>
-                <span className="text-gray-600">/month</span>
+                <span className="text-muted-foreground">/month</span>
               </div>
             </CardHeader>
             <CardContent>
@@ -122,7 +124,7 @@ export default function PricingPage() {
               <CardDescription>For serious creators who post consistently</CardDescription>
               <div className="mt-4">
                 <span className="text-4xl font-bold">$290</span>
-                <span className="text-gray-600">/year</span>
+                <span className="text-muted-foreground">/year</span>
               </div>
               <p className="text-sm text-green-600 font-medium">
                 That&apos;s just $24/month - save $58
