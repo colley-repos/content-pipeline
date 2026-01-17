@@ -1,20 +1,46 @@
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+let openaiInstance: OpenAI | null = null
+let azureOpenAIInstance: OpenAI | null = null
 
-// Azure OpenAI configuration (if using Azure)
-const azureOpenAI = process.env.AZURE_OPENAI_API_KEY
-  ? new OpenAI({
-      apiKey: process.env.AZURE_OPENAI_API_KEY,
-      baseURL: process.env.AZURE_OPENAI_ENDPOINT,
-      defaultQuery: { 'api-version': '2024-02-01' },
-      defaultHeaders: { 'api-key': process.env.AZURE_OPENAI_API_KEY },
+function getOpenAIClient(): OpenAI {
+  // Check Azure first
+  if (process.env.AZURE_OPENAI_API_KEY) {
+    if (!azureOpenAIInstance) {
+      azureOpenAIInstance = new OpenAI({
+        apiKey: process.env.AZURE_OPENAI_API_KEY,
+        baseURL: process.env.AZURE_OPENAI_ENDPOINT,
+        defaultQuery: { 'api-version': '2024-02-01' },
+        defaultHeaders: { 'api-key': process.env.AZURE_OPENAI_API_KEY },
+      })
+    }
+    return azureOpenAIInstance
+  }
+  
+  // Fallback to regular OpenAI
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY environment variable is missing')
+  }
+  
+  if (!openaiInstance) {
+    openaiInstance = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
     })
-  : null
+  }
+  
+  return openaiInstance
+}
 
-const client = azureOpenAI || openai
+const client = new Proxy({} as OpenAI, {
+  get: (target, prop) => {
+    const openaiClient = getOpenAIClient()
+    const value = openaiClient[prop as keyof OpenAI]
+    if (typeof value === 'function') {
+      return value.bind(openaiClient)
+    }
+    return value
+  }
+})
 
 export interface GenerateContentParams {
   type: 'social_post' | 'caption' | 'script' | 'bio' | 'reply' | 'content_calendar'
