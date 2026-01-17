@@ -21,15 +21,22 @@ AI-powered content workflow automation for creators and influencers. Built with 
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Next.js 14 (React), TailwindCSS, Radix UI
+- **Frontend**: Next.js 14 (React), TailwindCSS, Radix UI, Dark Mode (next-themes)
 - **Backend**: Next.js API Routes (Node.js)
 - **Database**: PostgreSQL with Prisma ORM
 - **Authentication**: NextAuth.js
 - **Payments**: Stripe
 - **AI**: OpenAI / Azure OpenAI
+- **Video Processing**: FFmpeg (audio processing, video generation)
 - **Email**: Nodemailer (SMTP)
-- **Deployment**: Docker + Docker Compose
-- **CI/CD**: GitHub Actions
+- **Deployment**: Vercel + Neon PostgreSQL
+- **CI/CD**: GitHub Actions + Vercel
+
+## 📚 Documentation
+
+- [Architecture](docs/architecture/) - System workflow and cost tracking
+- [Features](docs/features/) - Video editing, social media integration, FFmpeg deployment
+- [Security](docs/security/) - Security implementation and best practices
 
 ## 📋 Prerequisites
 
