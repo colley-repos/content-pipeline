@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { Sparkles } from 'lucide-react'
 
 export default async function SharePage({ params }: { params: { token: string } }) {
   const content = await prisma.content.findUnique({
@@ -40,9 +41,10 @@ export default async function SharePage({ params }: { params: { token: string } 
             </div>
 
             <div className="border-t pt-6">
-              <p className="text-center text-lg font-semibold mb-4">
-                🚀 Want to create content like this?
-              </p>
+              <div className="flex items-center justify-center gap-2 text-lg font-semibold mb-4">
+                <Sparkles className="h-5 w-5 text-purple-600" />
+                <p>Want to create content like this?</p>
+              </div>
               <div className="flex justify-center space-x-4">
                 <Link href="/register">
                   <Button size="lg">

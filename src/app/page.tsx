@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { Zap, Target, Smartphone, DollarSign, FileText, Share2 } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -55,42 +56,54 @@ export default function Home() {
         </h2>
         <div className="grid md:grid-cols-3 gap-8">
           <div className="bg-card p-6 rounded-lg shadow-lg">
-            <div className="text-4xl mb-4">⚡</div>
+            <div className="mb-4">
+              <Zap className="h-12 w-12 text-purple-600" />
+            </div>
             <h3 className="text-xl font-semibold mb-2">Lightning Fast</h3>
             <p className="text-muted-foreground">
               Generate a month&apos;s worth of posts in minutes, not hours. Get your time back.
             </p>
           </div>
           <div className="bg-card p-6 rounded-lg shadow-lg">
-            <div className="text-4xl mb-4">🎯</div>
+            <div className="mb-4">
+              <Target className="h-12 w-12 text-purple-600" />
+            </div>
             <h3 className="text-xl font-semibold mb-2">Your Voice, Your Brand</h3>
             <p className="text-muted-foreground">
               Bring your own scripts or let AI create everything. Either way, it sounds like you.
             </p>
           </div>
           <div className="bg-card p-6 rounded-lg shadow-lg">
-            <div className="text-4xl mb-4">📱</div>
+            <div className="mb-4">
+              <Smartphone className="h-12 w-12 text-purple-600" />
+            </div>
             <h3 className="text-xl font-semibold mb-2">Made for Social</h3>
             <p className="text-muted-foreground">
               Instagram, TikTok, YouTube Shorts - optimized content for every platform.
             </p>
           </div>
           <div className="bg-card p-6 rounded-lg shadow-lg">
-            <div className="text-4xl mb-4">💰</div>
+            <div className="mb-4">
+              <DollarSign className="h-12 w-12 text-purple-600" />
+            </div>
             <h3 className="text-xl font-semibold mb-2">Actually Affordable</h3>
             <p className="text-muted-foreground">
               $29/month for 30 minutes of content. That&apos;s less than a Netflix subscription.
             </p>
           </div>
           <div className="bg-card p-6 rounded-lg shadow-lg">
-            <div className="text-4xl mb-4">🎯</div>
+            <div className="mb-4">
+              <FileText className="h-12 w-12 text-purple-600" />
+            </div>
             <h3 className="text-xl font-semibold mb-2">Bios & Profiles</h3>
             <p className="text-muted-foreground">
               Write memorable bios that showcase your unique value.
             </p>
           </div>
           <div className="bg-card p-6 rounded-lg shadow-lg">
-            <div className="text-4xl mb-4">🚀</div>
+            <div className="mb-4">
+              <Share2 className="h-12 w-12 text-purple-600" />
+            </div>
             <h3 className="text-xl font-semibold mb-2">Shareable Outputs</h3>
             <p className="text-muted-foreground">
               Share your content with built-in viral CTAs.
